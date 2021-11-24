@@ -56,10 +56,10 @@ jobs:
         run: |
           case ${{ github.ref }} in
             refs/tags/*-alpha*|refs/tags/*-beta*|refs/tags/*-rc*)
-              export REPO_S3_DIR=${PRERELEASE_REPO_S3_DIR}
+              REPO_S3_DIR=${PRERELEASE_REPO_S3_DIR}
               ;;
             refs/tags/*)
-              export REPO_S3_DIR=${RELEASE_REPO_S3_DIR}
+              REPO_S3_DIR=${RELEASE_REPO_S3_DIR}
               ;;
           esac
 
@@ -72,4 +72,5 @@ jobs:
             CURL_CMD+=" -F $(basename ${f})=@./build/${f}"
           done
 
+          echo ${CURL_CMD}
           ${CURL_CMD}
