@@ -1,14 +1,14 @@
-name: deploy
+name: package
 
 on:
   push:
     branches:
       - '**'
     tags:
-      - '*'
+      - '**'
 
 jobs:
-  deploy:
+  package:
     runs-on: ubuntu-latest
 
     strategy:
@@ -48,21 +48,32 @@ jobs:
           DIST: ${{ matrix.platform.dist }}
         run: ./packpack/packpack
 
-#      - name: Deploy packages
-#        env:
-#          RELEASE_REPO_S3_DIR: ${{ secrets.RELEASE_REPO_S3_DIR }}
-#          PRERELEASE_REPO_S3_DIR: ${{ secrets.PRERELEASE_REPO_S3_DIR }}
-#          RWS_URL: ${{ secrets.RWS_URL }}
-#          RWS_USER: ${{ secrets.RWS_USER }}
-#          RWS_PASSWORD: ${{ secrets.RWS_PASSWORD }}
-#        run: |
-#          CURL_CMD="curl \
-#            -X PUT ${RWS_URL}/${REPO_S3_DIR}/${TNT_VERSION_S3_DIR}/${OS}/${DIST} \
-#            -u $${RWS_USER}:$${RWS_PASSWORD} \
-#            -F product=tarantool-queue"
-#
-#          for f in $(ls -I '*build*' -I '*.changes' ./build); do
-#            CURL_CMD+=" -F $(basename ${f})=@./build/${f}"
-#          done
-#
-#          ${CURL_CMD}
+      - name: Deploy packages
+        env:
+          OS: ${{ matrix.platform.os }}
+          DIST: ${{ matrix.platform.dist }}
+          RELEASE_REPO_S3_DIR: ${{ secrets.RELEASE_REPO_S3_DIR }}
+          PRERELEASE_REPO_S3_DIR: ${{ secrets.PRERELEASE_REPO_S3_DIR }}
+          RWS_URL: ${{ secrets.RWS_URL }}
+          RWS_USER: ${{ secrets.RWS_USER }}
+          RWS_PASSWORD: ${{ secrets.RWS_PASSWORD }}
+        run: |
+          case ${{ github.ref }} in
+            refs/tags/*-alpha*|refs/tags/*-beta*|refs/tags/*-rc*)
+              export REPO_S3_DIR=${PRERELEASE_REPO_S3_DIR}
+              ;;
+            refs/tags/*)
+              export REPO_S3_DIR=${RELEASE_REPO_S3_DIR}
+              ;;
+          esac
+
+          CURL_CMD="curl \
+            -X PUT ${RWS_URL}/${REPO_S3_DIR}/enabled/${OS}/${DIST} \
+            -u ${RWS_USER}:${RWS_PASSWORD} \
+            -F product=tarantool-queue"
+
+          for f in $(ls -I '*build*' -I '*.changes' ./build); do
+            CURL_CMD+=" -F $(basename ${f})=@./build/${f}"
+          done
+
+          ${CURL_CMD}
