@@ -34,6 +34,8 @@ jobs:
     steps:
       - name: Clone the module
         uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
 
       - name: Clone the packpack tool
         uses: actions/checkout@v2
